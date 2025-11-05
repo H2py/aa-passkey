@@ -1,33 +1,39 @@
-import { useCallback, useMemo, useState } from 'react';
-import type { FormEvent } from 'react';
-import { startAuthentication, startRegistration } from '@simplewebauthn/browser';
+import { FormEvent, KeyboardEvent, useCallback, useMemo, useRef, useState } from 'react';
+import { startRegistration } from '@simplewebauthn/browser';
+import type {
+  PublicKeyCredentialCreationOptionsJSON,
+  RegistrationResponseJSON,
+} from '../types/webauthn';
 import type { Address } from 'viem';
 import { DepositQR } from './DepositQR';
 import { WalletModal } from './WalletModal';
 import { makeAaClients } from '../lib/aa';
 import {
-  type ApiUser,
-  requestPasskeyLoginOptions,
-  requestPasskeyRegistrationOptions,
-  signupUser,
-  verifyPasskeyLogin,
+  generatePasskeyOptions,
+  requestEmailCode,
+  verifyEmailCode,
   verifyPasskeyRegistration,
 } from '../lib/api';
 
+const CODE_LENGTH = 6;
+
 type Status = 'idle' | 'loading' | 'success' | 'error';
+type Step = 'email' | 'code' | 'passkey';
 
 interface AuthModalProps {
   open: boolean;
   onClose: () => void;
-  onAuthenticated: (user: ApiUser) => void;
+  onAuthenticated: (email: string) => void;
 }
 
 export function AuthModal({ open, onClose, onAuthenticated }: AuthModalProps) {
   const [email, setEmail] = useState('');
-  const [displayName, setDisplayName] = useState('');
+  const [code, setCode] = useState<string[]>(Array(CODE_LENGTH).fill(''));
+  const [step, setStep] = useState<Step>('email');
   const [status, setStatus] = useState<Status>('idle');
   const [error, setError] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
+  const [registrationToken, setRegistrationToken] = useState<string | null>(null);
 
   const [isWalletModalOpen, setWalletModalOpen] = useState(false);
   const [walletFeedback, setWalletFeedback] = useState<string | null>(null);
@@ -36,12 +42,18 @@ export function AuthModal({ open, onClose, onAuthenticated }: AuthModalProps) {
   const [aaAddress, setAaAddress] = useState<Address | null>(null);
   const [aaError, setAaError] = useState<string | null>(null);
 
+  const codeRefs = useRef<Array<HTMLInputElement | null>>([]);
+
   const env = useMemo(() => import.meta.env as Record<string, string | undefined>, []);
 
   const resetState = useCallback(() => {
+    setEmail('');
+    setCode(Array(CODE_LENGTH).fill(''));
+    setStep('email');
     setStatus('idle');
     setError(null);
     setInfoMessage(null);
+    setRegistrationToken(null);
     setWalletModalOpen(false);
     setWalletFeedback(null);
     setAaStatus('idle');
@@ -54,89 +66,84 @@ export function AuthModal({ open, onClose, onAuthenticated }: AuthModalProps) {
     onClose();
   }, [onClose, resetState]);
 
-  const browserSupportsPasskey = () =>
-    typeof window !== 'undefined' && typeof window.PublicKeyCredential !== 'undefined';
-
-  const handlePasskeyRegister = async (event: FormEvent<HTMLFormElement>) => {
+  const handleEmailSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedEmail = email.trim();
     if (!trimmedEmail) {
       setError('이메일을 입력해주세요.');
       setStatus('error');
       return;
     }
 
-    if (!browserSupportsPasskey()) {
-      setError('이 브라우저에서는 패스키를 지원하지 않습니다. 다른 브라우저를 사용해주세요.');
-      setStatus('error');
-      return;
-    }
-
     setStatus('loading');
     setError(null);
-    setInfoMessage('디바이스에서 패스키 등록 창이 뜨면 승인해주세요.');
+    setInfoMessage('인증 메일을 전송하는 중입니다...');
+    setStep('code');
+    setCode(Array(CODE_LENGTH).fill(''));
 
     try {
-      const name = displayName.trim() || trimmedEmail;
-      await signupUser({ email: trimmedEmail, displayName: name });
-
-      const options = await requestPasskeyRegistrationOptions({
-        email: trimmedEmail,
-        displayName: name,
-      });
-
-      const credential = await startRegistration(options);
-      const user = await verifyPasskeyRegistration({
-        email: trimmedEmail,
-        response: credential,
-      });
-
-      setStatus('success');
-      setInfoMessage('패스키 등록이 완료되었습니다.');
-      onAuthenticated(user);
-      closeModal();
+      await requestEmailCode(trimmedEmail);
+      setStatus('idle');
+      setInfoMessage(`${trimmedEmail}로 인증 코드를 전송했습니다.`);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      setError(message || '패스키 등록 중 오류가 발생했습니다.');
-      setInfoMessage(null);
+      setError(message || '메일 전송 중 오류가 발생했습니다.');
       setStatus('error');
+      setStep('email');
     }
   };
 
-  const handlePasskeyLogin = async () => {
-    const trimmedEmail = email.trim().toLowerCase();
-    if (!trimmedEmail) {
-      setError('이메일을 입력해주세요.');
-      setStatus('error');
-      return;
-    }
+  const handleCodeChange = (index: number, value: string) => {
+    const sanitized = value.replace(/[^0-9]/g, '').slice(-1);
+    const next = [...code];
+    next[index] = sanitized;
+    setCode(next);
 
-    if (!browserSupportsPasskey()) {
-      setError('이 브라우저에서는 패스키를 지원하지 않습니다. 다른 브라우저를 사용해주세요.');
+    if (sanitized && index < CODE_LENGTH - 1) {
+      codeRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleCodeKeyDown = (event: KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (event.key === 'Backspace' && !code[index] && index > 0) {
+      event.preventDefault();
+      const prevIndex = index - 1;
+      const next = [...code];
+      next[prevIndex] = '';
+      setCode(next);
+      codeRefs.current[prevIndex]?.focus();
+    }
+  };
+
+  const handleVerifyCode = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmedEmail = email.trim();
+    if (code.some((digit) => digit === '')) {
+      setError('6자리 코드를 모두 입력해주세요.');
       setStatus('error');
       return;
     }
 
     setStatus('loading');
     setError(null);
-    setInfoMessage('디바이스에서 패스키 인증을 진행해주세요.');
 
     try {
-      const options = await requestPasskeyLoginOptions({ email: trimmedEmail });
-      const assertion = await startAuthentication(options);
-      const user = await verifyPasskeyLogin({
-        email: trimmedEmail,
-        response: assertion,
-      });
+      const result = await verifyEmailCode({ email: trimmedEmail, code: code.join('') });
+      setRegistrationToken(result.registrationToken);
+      setStatus('idle');
 
-      setStatus('success');
-      setInfoMessage('로그인에 성공했습니다.');
-      onAuthenticated(user);
-      closeModal();
+      if (result.isNewUser) {
+        setStep('passkey');
+        setInfoMessage('패스키를 등록하면 회원가입이 완료됩니다.');
+      } else {
+        setInfoMessage('로그인에 성공했습니다.');
+        setStatus('success');
+        onAuthenticated(trimmedEmail);
+        closeModal();
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      setError(message || '패스키 로그인에 실패했습니다.');
-      setInfoMessage(null);
+      setError(message || '코드를 확인하는 중 오류가 발생했습니다.');
       setStatus('error');
     }
   };
@@ -187,6 +194,39 @@ export function AuthModal({ open, onClose, onAuthenticated }: AuthModalProps) {
     }
   };
 
+  const handleRegisterPasskey = async () => {
+    if (!registrationToken) {
+      setError('등록 토큰이 만료되었습니다. 처음부터 다시 시도해주세요.');
+      setStatus('error');
+      setStep('email');
+      return;
+    }
+
+    setStatus('loading');
+    setError(null);
+
+    try {
+      const options: PublicKeyCredentialCreationOptionsJSON = await generatePasskeyOptions({
+        registrationToken,
+      });
+      const credential: RegistrationResponseJSON = await startRegistration(options);
+      const verification = await verifyPasskeyRegistration({ registrationToken, credential });
+
+      if (!verification.verified) {
+        throw new Error('패스키 등록에 실패했습니다.');
+      }
+
+      setStatus('success');
+      setInfoMessage('패스키 등록이 완료되었습니다.');
+      onAuthenticated(email.trim());
+      closeModal();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      setError(message || '패스키 등록 중 오류가 발생했습니다.');
+      setStatus('error');
+    }
+  };
+
   if (!open) {
     return null;
   }
@@ -204,67 +244,141 @@ export function AuthModal({ open, onClose, onAuthenticated }: AuthModalProps) {
           </button>
         </div>
 
-        <h1>Connect to Citrea</h1>
-        <p className="read-the-docs">
-          패스키 또는 Web3 지갑을 연결해 Citrea Market을 이용해보세요.
-        </p>
+        {step === 'email' && (
+          <>
+            <h1>Connect to Citrea</h1>
+            <p className="read-the-docs">로그인 / 회원가입을 진행해주세요.</p>
 
-        <form className="login-form card" onSubmit={handlePasskeyRegister}>
-          <label className="login-label" htmlFor="email">
-            이메일
-          </label>
-          <input
-            id="email"
-            type="email"
-            placeholder="name@example.com"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            autoComplete="email"
-            disabled={status === 'loading'}
-          />
+            <form className="login-form card" onSubmit={handleEmailSubmit}>
+              <label className="login-label" htmlFor="email">
+                이메일
+              </label>
+              <input
+                id="email"
+                type="email"
+                placeholder="name@example.com"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                autoComplete="email"
+                disabled={status === 'loading'}
+              />
 
-          <label className="login-label" htmlFor="displayName">
-            표시 이름 (선택)
-          </label>
-          <input
-            id="displayName"
-            type="text"
-            placeholder="Citrea Builder"
-            value={displayName}
-            onChange={(event) => setDisplayName(event.target.value)}
-            autoComplete="name"
-            disabled={status === 'loading'}
-          />
+              <button className="primary-button" type="submit" disabled={status === 'loading'}>
+                {status === 'loading' ? '메일 전송 중...' : 'Login / Sign up'}
+              </button>
 
-          <button className="primary-button" type="submit" disabled={status === 'loading'}>
-            {status === 'loading' ? '패스키 처리 중...' : 'Sign up with Passkey'}
-          </button>
+              <div className="divider">
+                <span>OR</span>
+              </div>
 
-          <button
-            className="secondary-button"
-            type="button"
-            onClick={handlePasskeyLogin}
-            disabled={status === 'loading'}
-          >
-            Login with Passkey
-          </button>
+              <button className="secondary-button" type="button" disabled>
+                <span className="button-icon google">G</span>
+                Google (준비 중)
+              </button>
 
-          <div className="divider">
-            <span>OR</span>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={handleOpenWalletModal}
+              >
+                <span className="button-icon wallet">≋</span>
+                Connect Wallet
+              </button>
+
+              {status === 'error' && error && <p className="login-error">{error}</p>}
+              {status === 'success' && infoMessage && (
+                <p className="login-success">{infoMessage}</p>
+              )}
+            </form>
+          </>
+        )}
+
+        {step === 'code' && (
+          <div className="code-step card">
+            <div className="code-icon" aria-hidden>
+              ✉️
+            </div>
+            <p className="code-instruction">
+              {infoMessage ?? `${email}로 전송한 코드를 입력해주세요.`}
+            </p>
+
+            {status === 'loading' ? (
+              <div className="spinner" aria-label="loading" />
+            ) : (
+              <form className="code-form" onSubmit={handleVerifyCode}>
+                <div className="code-inputs">
+                  {code.map((digit, index) => (
+                    <input
+                      key={index}
+                      ref={(element) => {
+                        codeRefs.current[index] = element;
+                      }}
+                      className="code-input"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(event) => handleCodeChange(index, event.target.value)}
+                      onKeyDown={(event) => handleCodeKeyDown(event, index)}
+                      autoFocus={index === 0}
+                    />
+                  ))}
+                </div>
+
+                <button className="primary-button" type="submit">
+                  확인
+                </button>
+              </form>
+            )}
+
+            <button
+              className="link-button"
+              type="button"
+              onClick={() => {
+                setStep('email');
+                setStatus('idle');
+                setError(null);
+              }}
+            >
+              다른 이메일 사용하기
+            </button>
+
+            {status === 'error' && error && <p className="login-error">{error}</p>}
+            {status === 'success' && infoMessage && (
+              <p className="login-success">{infoMessage}</p>
+            )}
           </div>
+        )}
 
-          <button
-            className="secondary-button"
-            type="button"
-            onClick={handleOpenWalletModal}
-          >
-            <span className="button-icon wallet">≋</span>
-            Connect Wallet
-          </button>
+        {step === 'passkey' && (
+          <div className="code-step card">
+            <div className="code-icon" aria-hidden>
+              🔐
+            </div>
+            <p className="code-instruction">
+              {infoMessage ?? '디바이스에서 안내하는 절차에 따라 패스키를 등록해주세요.'}
+            </p>
 
-          {error && status === 'error' && <p className="login-error">{error}</p>}
-          {infoMessage && status !== 'error' && <p className="login-info">{infoMessage}</p>}
-        </form>
+            <button
+              className="primary-button"
+              type="button"
+              onClick={handleRegisterPasskey}
+              disabled={status === 'loading'}
+            >
+              {status === 'loading' ? '패스키 등록 중...' : '패스키 등록 시작'}
+            </button>
+
+            <button className="link-button" type="button" onClick={closeModal}>
+              나중에 등록하기
+            </button>
+
+            {status === 'error' && error && <p className="login-error">{error}</p>}
+            {status === 'success' && infoMessage && (
+              <p className="login-success">{infoMessage}</p>
+            )}
+          </div>
+        )}
 
         <WalletModal
           open={isWalletModalOpen}

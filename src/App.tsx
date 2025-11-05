@@ -1,8 +1,6 @@
 import './App.css';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { AuthModal } from './components/AuthModal';
-import type { ApiUser } from './lib/api';
-import { fetchCurrentUser, logout } from './lib/api';
 
 const FEATURED_PRODUCTS = [
   {
@@ -37,40 +35,11 @@ const FEATURED_PRODUCTS = [
 
 function App() {
   const [isAuthOpen, setAuthOpen] = useState(false);
-  const [user, setUser] = useState<ApiUser | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    fetchCurrentUser()
-      .then((currentUser) => {
-        if (!cancelled) {
-          setUser(currentUser);
-        }
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          console.warn('세션 정보를 불러오는 중 오류가 발생했습니다.', err);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const handleAuthenticated = (nextUser: ApiUser) => {
-    setUser(nextUser);
+  const handleAuthenticated = (email: string) => {
+    setUserEmail(email);
     setAuthOpen(false);
-  };
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      setUser(null);
-    } catch (err) {
-      console.warn('로그아웃 요청 중 오류가 발생했습니다.', err);
-    }
   };
 
   return (
@@ -87,17 +56,10 @@ function App() {
         </nav>
 
         <div className="store-actions">
-          {user ? <span className="user-chip">{user.email}</span> : null}
-          {user ? (
-            <button className="link-button" type="button" onClick={handleLogout}>
-              Logout
-            </button>
-          ) : (
-            <button className="connect-button" type="button" onClick={() => setAuthOpen(true)}>
-            Connect Wallet
-            </button>
-          )}
-          
+          {userEmail ? <span className="user-chip">{userEmail}</span> : null}
+          <button className="connect-button" type="button" onClick={() => setAuthOpen(true)}>
+            {userEmail ? 'Manage Account' : 'Connect Wallet'}
+          </button>
         </div>
       </header>
 
@@ -111,6 +73,9 @@ function App() {
               스마트 계정으로 한 번만 등록하면 모든 서비스를 사용할 수 있어요.
             </p>
             <div className="hero-actions">
+              <button className="primary-button" type="button" onClick={() => setAuthOpen(true)}>
+                Connect Wallet
+              </button>
               <button className="secondary-button" type="button">
                 Explore Catalog
               </button>
