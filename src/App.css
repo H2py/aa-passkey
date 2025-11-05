@@ -493,6 +493,12 @@
   text-align: center;
 }
 
+.login-info {
+  color: #60a5fa;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
 .code-step {
   display: flex;
   flex-direction: column;
