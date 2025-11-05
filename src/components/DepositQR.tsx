@@ -1,5 +1,5 @@
 // cspell:ignore qrcode
-import QRCode from 'qrcode.react';
+import { QRCodeCanvas } from 'qrcode.react';
 
 export function DepositQR({ address, token, amount }: { address: string; token?: string; amount?: string }) {
   // EIP-681 (토큰 전송 URI를 지원하는 지갑용), 지원 안 되면 address만 보여줌
@@ -10,7 +10,7 @@ export function DepositQR({ address, token, amount }: { address: string; token?:
 
   return (
     <div style={{ textAlign: 'center' }}>
-      <QRCode value={eip681} size={180} />
+      <QRCodeCanvas value={eip681} size={180} />
       <div style={{ marginTop: 8, fontFamily: 'monospace' }}>{address}</div>
       <small>지갑에서 1 USDC를 이 주소로 전송</small>
     </div>
