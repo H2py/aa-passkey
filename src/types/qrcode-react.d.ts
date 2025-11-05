@@ -1,5 +1,5 @@
 declare module 'qrcode.react' {
-  import type { ComponentClass, CanvasHTMLAttributes, SVGProps } from 'react';
+  import type { ComponentType, CanvasHTMLAttributes, SVGProps } from 'react';
 
   interface ImageSettings {
     src: string;
@@ -28,8 +28,6 @@ declare module 'qrcode.react' {
     renderAs: 'svg';
   } & SVGProps<SVGSVGElement>;
 
-  type QRCodeComponent = ComponentClass<CanvasQRCodeProps | SvgQRCodeProps>;
-
-  const QRCode: QRCodeComponent;
-  export default QRCode;
+  export const QRCodeCanvas: ComponentType<CanvasQRCodeProps>;
+  export const QRCodeSVG: ComponentType<SvgQRCodeProps>;
 }
