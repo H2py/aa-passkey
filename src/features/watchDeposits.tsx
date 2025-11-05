@@ -1,3 +1,4 @@
+// cspell:ignore simplewebauthn webauthn viem Citrea PIMLICO
 import { createPublicClient, decodeEventLog, getAddress, http, parseAbiItem } from 'viem';
 import type { Address, Hash } from 'viem';
 import { citrea } from '../chain/citrea';

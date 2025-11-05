@@ -1,9 +1,11 @@
-import { FormEvent, KeyboardEvent, useCallback, useMemo, useRef, useState } from 'react';
+// cspell:ignore simplewebauthn webauthn viem Citrea PIMLICO
+import { useCallback, useMemo, useRef, useState } from 'react';
+import type { FormEvent, KeyboardEvent } from 'react';
 import { startRegistration } from '@simplewebauthn/browser';
 import type {
   PublicKeyCredentialCreationOptionsJSON,
   RegistrationResponseJSON,
-} from '../types/webauthn';
+} from '@simplewebauthn/types';
 import type { Address } from 'viem';
 import { DepositQR } from './DepositQR';
 import { WalletModal } from './WalletModal';

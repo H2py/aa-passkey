@@ -493,39 +493,12 @@
   text-align: center;
 }
 
-.code-step {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  background: transparent;
-  box-shadow: none;
-}
-
-.code-icon {
-  font-size: 2.5rem;
-}
-
-.code-instruction {
+.login-info {
+  color: #60a5fa;
+  font-size: 0.875rem;
   text-align: center;
-  color: #cbd5f5;
-  margin: 0;
-  line-height: 1.5;
 }
 
-.code-form {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.5rem;
-  width: 100%;
-}
-
-.code-inputs {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 0.75rem;
-  width: 100%;
 .code-step {
   display: flex;
   flex-direction: column;
@@ -577,41 +550,8 @@
   outline: none;
   border-color: #ef4444;
   box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.35);
-
-.code-input {
-  text-align: center;
-  font-size: 1.5rem;
-  font-weight: 600;
-  padding: 0.75rem 0;
-  border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.5);
-  background: rgba(15, 23, 42, 0.5);
-  color: #f8fafc;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.code-input:focus {
-  outline: none;
-  border-color: #ef4444;
-  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.35);
-}
-
-.spinner {
-  width: 56px;
-  height: 56px;
-  border: 6px solid rgba(148, 163, 184, 0.25);
-  border-top-color: #ef4444;
-  border-radius: 50%;
-  animation: spin 0.85s linear infinite;
-}
-
-.spinner.small {
-  width: 36px;
-  height: 36px;
-  border-width: 4px;
-}
-
-@keyframes spin {
 .spinner {
   width: 56px;
   height: 56px;
@@ -693,124 +633,6 @@
   color: #f8fafc;
   font-size: 0.95rem;
   margin: 0;
-}
-
-.walletconnect-qr {
-  display: flex;
-  justify-content: center;
-  margin-top: 1rem;
-}
-
-@media (max-width: 768px) {
-  .store-app {
-    padding: 1.5rem 1.25rem 2rem;
-  }
-
-  .store-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .store-nav {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .hero {
-    padding: 2rem;
-  }
-
-  .hero-actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .store-footer {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-}
-
-@media (max-width: 520px) {
-  .login-container {
-    padding: 2rem 1.5rem;
-  }
-
-  .login-badge {
-    width: 42px;
-    height: 42px;
-    font-size: 1.25rem;
-  }
-
-  .code-inputs {
-    gap: 0.5rem;
-  }
-.wallet-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.65);
-  backdrop-filter: blur(10px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1.5rem;
-  z-index: 40;
-}
-
-.wallet-modal {
-  width: min(420px, 100%);
-  background: #0f172a;
-  border-radius: 20px;
-  padding: 1.75rem;
-  box-shadow: 0 25px 55px rgba(15, 23, 42, 0.65);
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-.wallet-modal__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  color: #f8fafc;
-}
-
-.wallet-modal__close {
-  background: none;
-  border: none;
-  color: #94a3b8;
-  font-size: 1.15rem;
-  cursor: pointer;
-}
-
-.wallet-modal__close:hover {
-  color: #e2e8f0;
-}
-
-.wallet-modal__actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.wallet-modal__content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  text-align: center;
-}
-
-.wallet-feedback {
-  color: #f8fafc;
-  font-size: 0.95rem;
-  margin: 0;
-}
-
-.walletconnect-qr {
-  display: flex;
-  justify-content: center;
-  margin-top: 1rem;
 }
 
 @media (max-width: 768px) {

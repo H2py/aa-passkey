@@ -5,7 +5,7 @@ import { AuthModal } from './components/AuthModal';
 const FEATURED_PRODUCTS = [
   {
     id: 1,
-    name: 'Citrea Hoodie',
+    name: 'Hoodie',
     price: '89,000원',
     description: '제로 지식 패턴의 프리미엄 후드 집업',
     badge: 'New',
@@ -26,7 +26,7 @@ const FEATURED_PRODUCTS = [
   },
   {
     id: 4,
-    name: 'Citrea Nodes',
+    name: ' Nodes',
     price: '219,000원',
     description: '테스트넷 운영자용 mini PC 노드',
     badge: 'Ships in 48h',
@@ -46,7 +46,7 @@ function App() {
     <div className="store-app">
       <header className="store-header">
         <a className="brand" href="/">
-          Citrea Market
+           Market
         </a>
 
         <nav className="store-nav">
@@ -66,10 +66,10 @@ function App() {
       <main className="store-main">
         <section className="hero">
           <div className="hero-content">
-            <span className="hero-badge">Citrea Exclusive</span>
-            <h1>Rollups ready commerce, powered by Account Abstraction</h1>
+            <span className="hero-badge"> Exclusive</span>
+            <h1>Roll ups ready commerce, powered by Account Abstraction</h1>
             <p>
-              Citrea Market는 Web3 지갑 연결과 패스키 인증을 결합한 차세대 쇼핑 경험을 제공합니다.
+               Market는 Web3 지갑 연결과 패스키 인증을 결합한 차세대 쇼핑 경험을 제공합니다.
               스마트 계정으로 한 번만 등록하면 모든 서비스를 사용할 수 있어요.
             </p>
             <div className="hero-actions">
@@ -84,7 +84,7 @@ function App() {
           <div className="hero-visual">
             <div className="hero-card">
               <span>Next delivery</span>
-              <strong>Citrea Lightning Node</strong>
+              <strong> Lightning Node</strong>
               <p>Track shipments and manage paymasters in 하나의 대시보드</p>
             </div>
             <div className="hero-card">
@@ -126,7 +126,7 @@ function App() {
       </main>
 
       <footer className="store-footer">
-        <span>© {new Date().getFullYear()} Citrea Market. All rights reserved.</span>
+        <span>© {new Date().getFullYear()}  Market. All rights reserved.</span>
         <div className="footer-links">
           <a href="#privacy">Privacy</a>
           <a href="#terms">Terms</a>

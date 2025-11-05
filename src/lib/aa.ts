@@ -1,3 +1,4 @@
+// cspell:ignore simplewebauthn webauthn viem Citrea PIMLICO permissionless Privkey
 import { createPublicClient, http, type Address, type PublicClient } from 'viem';
 import { entryPoint06Address, entryPoint07Address } from 'viem/account-abstraction';
 import { privateKeyToAccount, type PrivateKeyAccount } from 'viem/accounts';

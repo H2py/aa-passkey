@@ -1,3 +1,4 @@
+// cspell:ignore simplewebauthn webauthn viem Citrea PIMLICO signup
 # Citrea Market Demo
 
 React + Vite로 구성된 Citrea 쇼핑몰 데모입니다. 메인 화면은 간단한 커머스 랜딩 페이지로 구성되어 있으며, 오른쪽 상단 `Connect Wallet` 버튼을 통해 아래 절차를 실행합니다.
